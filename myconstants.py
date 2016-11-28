@@ -6,7 +6,7 @@ KEEP_STOPWORDS = ['against', 'not', 'no', 'very', 'just', 'over', 'only']
 TOTAL_REVIEWS = 400000
 HUNDRED = 100
 
-CLASSES = [[1],[2],[3],[4], [5]]
+CLASSES = [[1],[2],[3]]
 CLASS_LEN = 80000
 CLASS_LEN_TEST = 100
 
@@ -80,10 +80,10 @@ def get_constant(name, test):
   return eval(name + '_TEST') if test else eval(name)
 
 
-def get_save_name(name, mode, classified=True):
+def get_save_name(name, mode, classified=True, classification=CLASSES):
   path = MATRIX_DIR + name + str(mode)
   if classified:
-    for cla in CLASSES:
+    for cla in classification:
       path += '_'
 
       for rating in cla:
