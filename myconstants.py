@@ -6,7 +6,7 @@ KEEP_STOPWORDS = ['against', 'not', 'no', 'very', 'just', 'over', 'only']
 TOTAL_REVIEWS = 400000
 HUNDRED = 100
 
-CLASSES = [[1],[2],[3]]
+CLASSES = [[1,2],[3]]
 CLASS_LEN = 80000
 CLASS_LEN_TEST = 100
 

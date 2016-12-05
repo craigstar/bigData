@@ -8,3 +8,6 @@ mode = myconstants.Mode.MODE_MEAN
 learning_rate = 0.1
 ml.tf_train(learning_rate=learning_rate, test=False, mode=mode, loops=3000)
 
+
+classes = [[1,2],[3,4,5]]
+# ml.test_cascade(classification=classes)

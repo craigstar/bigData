@@ -31,7 +31,7 @@ def del_stopwords(sentence, exception_list=myconstants.KEEP_STOPWORDS):
 
 def scrape(
   stop_at=None,
-  train=0.85,
+  train=0.80,
   test=True
 ):
 # This function is to scrape only TestReview and Overall fields from original Amazon database

@@ -305,3 +305,95 @@ def tf_train(test=True, learning_rate=0.5, mode=myconstants.Mode.MODE_MEAN, loop
     np.save(get_save_name(myconstants.NUMPY_B, mode), sess.run(b))
 
   return
+
+
+def predict(sentence, classification, vec_dim, mode=myconstants.Mode.MODE_MEAN):
+  sentence.shape = [1, vec_dim]
+
+  graph = tf.Graph()
+  with graph.as_default():
+    sess = tf.Session()
+    x = tf.Variable(sentence)
+
+    try:
+      W = tf.Variable(np.load(get_save_name(myconstants.NUMPY_W, mode=mode, classification=classification)))
+      b = tf.Variable(np.load(get_save_name(myconstants.NUMPY_B, mode=mode, classification=classification)))
+    except:
+      print 'you have not trained your model yet!'
+
+    y = tf.argmax(tf.nn.softmax(tf.matmul(x, W) + b), 1)
+
+    init = tf.initialize_all_variables()
+    sess.run(init)
+    result = sess.run(y)
+    total_class = classification
+    return total_class[result]
+
+
+
+def form_classes(classes):
+  formed_classes = []
+  for cla in classes:
+    formed_classes.append([cla])
+  return formed_classes
+
+
+def tolerate_class(prediction):
+  minimum = max(1, prediction[0]-1)
+  maximum = min(5, prediction[0]+1)
+  return [minimum, prediction[0], maximum]
+
+
+def test_cascade(mode=myconstants.Mode.MODE_MEAN, classification=None):
+  test=False
+
+  accuracy_path = get_constant('ACCURACY_PATH', test)
+  w2v_model_path = get_constant('W2V_MODEL_PATH', test)
+  d2v_model_path = get_constant('D2V_MODEL_PATH', test)
+
+  # Load model
+  if mode == myconstants.Mode.MODE_PCA:
+    vec_dim = myconstants.Mode.PCA_COMPONENTS * myconstants.W2V_DIM
+    model = gensim.models.Word2Vec.load(w2v_model_path)
+  elif mode == myconstants.Mode.MODE_MEAN:
+    vec_dim = myconstants.W2V_DIM
+    model = gensim.models.Word2Vec.load(w2v_model_path)
+  elif mode == myconstants.Mode.MODE_D2V:
+    vec_dim = myconstants.D2V_DIM
+    model = gensim.models.Doc2Vec.load(d2v_model_path)
+
+
+  accuracy_ratings, accuracy_reviews = get_validate_data(accuracy_path, model, mode)
+
+  accuracy_normal = {1:0, 2:0, 3:0, 4:0, 5:0}
+  accuracy_cascade = {1:0, 2:0, 3:0, 4:0, 5:0}
+  for idx, reviews in enumerate(accuracy_reviews):
+    temp_classes = classification
+    import operator
+    rating, value = max(enumerate(accuracy_ratings[idx]), key=operator.itemgetter(1))
+    rating += 1
+
+    # while 1:
+    #   if len(temp_classes) > 1:
+    #     p = predict(reviews, temp_classes, vec_dim, mode)
+    #     temp_classes = form_classes(p)
+    #   else:
+    #     if temp_classes[0][0] == rating:
+    #       accuracy_cascade[temp_classes[0][0]] += 1
+
+    #     p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+    #     if p[0] == rating:
+    #       accuracy_normal[p[0]] += 1
+    #     break
+
+    p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+    # print tolerate_class(p)
+    if rating in tolerate_class(p):
+      accuracy_cascade[rating] += 1
+
+    p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+    if p[0] == rating:
+      accuracy_normal[rating] += 1
+    print idx
+  print accuracy_normal, accuracy_cascade
+  return accuracy_normal, accuracy_cascade
