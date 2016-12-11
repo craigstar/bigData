@@ -6,8 +6,8 @@ KEEP_STOPWORDS = ['against', 'not', 'no', 'very', 'just', 'over', 'only']
 TOTAL_REVIEWS = 400000
 HUNDRED = 100
 
-CLASSES = [[1,2],[3]]
-CLASS_LEN = 80000
+CLASSES = [[1],[2],[3],[4],[5]]
+CLASS_LEN = int(80000 * 0.8)
 CLASS_LEN_TEST = 100
 
 DATA_DIR = 'database/'
@@ -20,6 +20,7 @@ ACCURACY_NAME = VALIDATE_NAME
 DATA_PATH = DATA_DIR + DATA_NAME
 TRAIN_PATH = DATA_DIR + TRAIN_NAME
 VALIDATE_PATH = DATA_DIR + VALIDATE_NAME
+ACCURACY_PATH = DATA_DIR + ACCURACY_NAME
 
 # Test database
 DATA_TEST_DIR = DATA_DIR + 'test/'
@@ -29,11 +30,8 @@ TRAIN_PATH_TEST = DATA_TEST_DIR + TRAIN_NAME
 VALIDATE_PATH_TEST = DATA_TEST_DIR + VALIDATE_NAME
 ACCURACY_PATH_TEST = DATA_TEST_DIR + ACCURACY_NAME
 
-# Use small data to validate in progross accuracy
-ACCURACY_PATH = ACCURACY_PATH_TEST
-
 # Word 2 vector
-W2V_DIM = 200
+W2V_DIM = 300
 TOTAL_REVIEWS_TEST = 500
 
 W2V_DIR = 'word2vec/'
@@ -71,16 +69,30 @@ D2V_SRC_PATH_TEST = DATA_TEST_DIR + D2V_SRC_NAME
 D2V_MODEL_PATH_TEST = D2V_TEST_DIR + D2V_MODEL_NAME
 
 
-MATRIX_DIR = DATA_DIR + 'matrix/'
+MATRIX_DIR = DATA_DIR + 'matrix_82/'
 
 NUMPY_W = 'w'
 NUMPY_B = 'b'
+
+
+# Results
+RESULT_DIR = 'results/82/'
+
+
+# PCA
+PCA_DIR = 'database/pca/'
+PCA_VALIDATE_RATING = 'validate_rating.npy'
+PCA_VALIDATE_REVIEW = 'validate_review.npy'
+PCA_VALIDATE_RATING_PATH = PCA_DIR + PCA_VALIDATE_RATING
+PCA_VALIDATE_REVIEW_PATH = PCA_DIR + PCA_VALIDATE_REVIEW
+
+
 
 def get_constant(name, test):
   return eval(name + '_TEST') if test else eval(name)
 
 
-def get_save_name(name, mode, classified=True, classification=CLASSES):
+def get_save_name(name, mode, classified=True, classification=CLASSES, prefix='.npy'):
   path = MATRIX_DIR + name + str(mode)
   if classified:
     for cla in classification:
@@ -89,7 +101,7 @@ def get_save_name(name, mode, classified=True, classification=CLASSES):
       for rating in cla:
         path += str(rating)
 
-  path += '.npy'
+  path += prefix
 
   # import pdb; pdb.set_trace()
   return path
@@ -100,4 +112,10 @@ class Mode():
   MODE_PCA = 0
   MODE_MEAN = 1
   MODE_D2V = 2
+
+  MODE_NAME = {
+    MODE_PCA: 'pca',
+    MODE_MEAN: 'mean',
+    MODE_D2V: 'd2v'
+  }
 

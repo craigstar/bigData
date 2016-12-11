@@ -99,6 +99,7 @@ database/reviews_Electronics_5.json
 database/reviews.txt
 database/train_data.json
 database/test_database.json
+database/validate_data.json
 
 
 # Huge Models

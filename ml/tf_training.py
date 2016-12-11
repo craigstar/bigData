@@ -93,6 +93,16 @@ def get_validate_data(file_path, model, mode):
 
   validate_reviews = []
   validate_ratings = []
+  counter = 0
+
+  if mode == myconstants.Mode.MODE_PCA:
+    try:
+      ratings = np.load(myconstants.PCA_VALIDATE_RATING_PATH)
+      reviews = np.load(myconstants.PCA_VALIDATE_REVIEW_PATH)
+
+      return [ratings, reviews]
+    except:
+      pass
 
   for idx, line in enumerate(validate_data_file):
     line = line.strip()
@@ -102,6 +112,9 @@ def get_validate_data(file_path, model, mode):
 
     if mode == myconstants.Mode.MODE_PCA:
       sen_represent = sentence_pca(data['reviewText'], model)
+      counter += 1
+      if counter % 100 == 0:
+        print counter
     elif mode == myconstants.Mode.MODE_MEAN:
       sen_represent = sentence_mean(data['reviewText'], model)
     elif mode == myconstants.Mode.MODE_D2V:
@@ -115,6 +128,10 @@ def get_validate_data(file_path, model, mode):
 
     validate_reviews.append(sen_represent)
     validate_ratings.append(rating)
+
+  if mode == myconstants.Mode.MODE_PCA:
+    np.save(myconstants.PCA_VALIDATE_RATING_PATH, np.array(validate_ratings))
+    np.save(myconstants.PCA_VALIDATE_REVIEW_PATH, np.array(validate_reviews))
 
   return [np.array(validate_ratings), np.array(validate_reviews)]
 
@@ -235,11 +252,30 @@ def tf_train(test=True, learning_rate=0.5, mode=myconstants.Mode.MODE_MEAN, loop
   accuracy_path = get_constant('ACCURACY_PATH', test)
   w2v_model_path = get_constant('W2V_MODEL_PATH', test)
   d2v_model_path = get_constant('D2V_MODEL_PATH', test)
+  result_folder = get_constant('RESULT_DIR', test)
 
   # total_num_reviews = f.num_of_reviews(sentence_path)
   # total_num_reviews = myconstants.TOTAL_REVIEWS
   # unit_percent_reviews = int(total_num_reviews / HUNDRED / 10)
 
+  # result/path
+  result_path = result_folder + myconstants.Mode.MODE_NAME[mode]
+  for cla in myconstants.CLASSES:
+    result_path += '_'
+
+    for rating in cla:
+      result_path += str(rating)
+
+  result_path += '.txt'
+
+
+  import os
+  if os.path.isfile(result_path):
+    result_file = open(result_path, 'a')
+    result_file.write('\n\n')
+  else:
+    result_file = open(result_path, 'w')
+    result_file.write('')
 
   # Load model
 
@@ -264,10 +300,11 @@ def tf_train(test=True, learning_rate=0.5, mode=myconstants.Mode.MODE_MEAN, loop
     try:
       W = tf.Variable(np.load(get_save_name(myconstants.NUMPY_W, mode)))
       b = tf.Variable(np.load(get_save_name(myconstants.NUMPY_B, mode)))
+      print('Exist {}: {}'.format(myconstants.Mode.MODE_NAME[mode], myconstants.CLASSES))
     except:
       W = tf.Variable(tf.truncated_normal([vec_dim, TOTAL_CLASSES]))
       b = tf.Variable(tf.truncated_normal([TOTAL_CLASSES]))
-      print('New {}: {}'.format(mode, myconstants.CLASSES))
+      print('New {}: {}'.format(myconstants.Mode.MODE_NAME[mode], myconstants.CLASSES))
 
     x = tf.placeholder(tf.float32, [None, vec_dim])
     y = tf.matmul(x, W) + b
@@ -297,13 +334,15 @@ def tf_train(test=True, learning_rate=0.5, mode=myconstants.Mode.MODE_MEAN, loop
       if count % 10 == 0:
         print_value = "percent test accuracy {}, ".format(accuracy.eval(feed_dict={x: accuracy_reviews, y_: accuracy_ratings}))
         print_value += 'loop: {}'.format(count)
+        result_file.write(print_value+'\n')
         print(print_value)
       count += 1
 
-    print('{}: {}'.format(mode, myconstants.CLASSES))
+    print('{}: {}'.format(myconstants.Mode.MODE_NAME[mode], myconstants.CLASSES))
     np.save(get_save_name(myconstants.NUMPY_W, mode), sess.run(W))
     np.save(get_save_name(myconstants.NUMPY_B, mode), sess.run(b))
 
+    result_file.close()
   return
 
 
@@ -373,27 +412,28 @@ def test_cascade(mode=myconstants.Mode.MODE_MEAN, classification=None):
     rating, value = max(enumerate(accuracy_ratings[idx]), key=operator.itemgetter(1))
     rating += 1
 
-    # while 1:
-    #   if len(temp_classes) > 1:
-    #     p = predict(reviews, temp_classes, vec_dim, mode)
-    #     temp_classes = form_classes(p)
-    #   else:
-    #     if temp_classes[0][0] == rating:
-    #       accuracy_cascade[temp_classes[0][0]] += 1
+    while 1:
+      if len(temp_classes) > 1:
+        p = predict(reviews, temp_classes, vec_dim, mode)
+        temp_classes = form_classes(p)
+      else:
+        if temp_classes[0][0] == rating:
+          accuracy_cascade[temp_classes[0][0]] += 1
 
-    #     p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
-    #     if p[0] == rating:
-    #       accuracy_normal[p[0]] += 1
-    #     break
+        p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+        if p[0] == rating:
+          accuracy_normal[p[0]] += 1
+        break
 
-    p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
-    # print tolerate_class(p)
-    if rating in tolerate_class(p):
-      accuracy_cascade[rating] += 1
+    # p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+    # # print tolerate_class(p)
+    # if rating in tolerate_class(p):
+    #   accuracy_cascade[rating] += 1
 
-    p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
-    if p[0] == rating:
-      accuracy_normal[rating] += 1
+    # p = predict(reviews, myconstants.CLASSES, vec_dim, mode)
+    # if p[0] == rating:
+    #   accuracy_normal[rating] += 1
     print idx
   print accuracy_normal, accuracy_cascade
   return accuracy_normal, accuracy_cascade
+2

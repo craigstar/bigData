@@ -1,5 +1,5 @@
 import gensim
-from myconstants import get_constant
+from myconstants import get_constant, W2V_DIM
 
 
 class MySentences(object):
@@ -17,6 +17,6 @@ def w2v_train(test=True):
   model_txt_path = get_constant('W2V_MODEL_TXT_PATH', test)
 
   sentences = MySentences(sentence_path) # a memory-friendly iterator
-  model = gensim.models.Word2Vec(sentences, size=200)
+  model = gensim.models.Word2Vec(sentences, size=W2V_DIM)
   model.save(model_path)
   model.save_word2vec_format(model_txt_path, binary=False)

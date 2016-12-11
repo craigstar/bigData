@@ -3,7 +3,7 @@ import re
 from nltk.corpus import stopwords
 
 import myconstants
-from myconstants import get_constant
+from myconstants import get_constant, HUNDRED
 
 
 def del_punctuations(sentence, exception_list=myconstants.DEFAULT_PUNCTS):
@@ -29,6 +29,12 @@ def del_stopwords(sentence, exception_list=myconstants.KEEP_STOPWORDS):
   new_sentence = [word for word in sentence_list if word in sentence_set]
   return ' '.join(new_sentence)
 
+
+def train_range(count, train, class_len):
+  if (count-1) % class_len < train * class_len:
+    return True
+  return False
+
 def scrape(
   stop_at=None,
   train=0.80,
@@ -36,14 +42,13 @@ def scrape(
 ):
 # This function is to scrape only TestReview and Overall fields from original Amazon database
 
-  HUNDRED = 100
-
   data_path = get_constant('DATA_PATH', test)
   train_path = get_constant('TRAIN_PATH', test)
   validate_path = get_constant('VALIDATE_PATH', test)
   reviews_path = get_constant('W2V_SRC_PATH', test)
 
-  total_num_reviews = num_of_reviews(data_path)
+  class_len = get_constant('CLASS_LEN', test)
+  total_num_reviews = class_len * 5
   unit_percent_reviews = int(total_num_reviews / HUNDRED)
 
   data_file = open(data_path, 'r')
@@ -64,7 +69,7 @@ def scrape(
 
     output = {"overall": data['overall'], "reviewText": review}
 
-    if count <= train * total_num_reviews:
+    if train_range(count, train, class_len):
       train_file.write(json.dumps(output)+'\n')
     else:
       validate_file.write(json.dumps(output)+'\n')
